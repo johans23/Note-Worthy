@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>ASM</title>
+	<!--  Below you will see a bunch of meta tags. From w3schools, "The <meta> tag 
+	provides metadata about the HTML document. Metadata will not be displayed on 
+	the page, but will be machine parsable."
+	Essentially, these tags add data that the browser can parse and do stuff about.
+	Link here: https://www.w3schools.com/tags/tag_meta.asp
+	-->
+	<!-- List of possible meta tags: https://gist.github.com/kevinSuttle/1997924 -->
+
+	<!-- Specify the character encoding for the HTML document 
+	Link here: https://www.w3schools.com/tags/att_meta_charset.asp -->
+	<meta charset="UTF-8">
+	<!-- makes your web page more mobile friendly. 
+	Link here: https://www.w3schools.com/css/css_rwd_viewport.asp  -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+	<meta name="description" content="Free Web tutorials">
+	<meta name="keywords" content="HTML,CSS">
+	<meta name="author" content="Your name goes here!">
+	
+	<!-- Link the stylesheet for this web page -->
+	<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+<h1>Audio To Sheet Music</h1>
+<p>
+	Audio File: 
+    <i class="input"></i> Custom Upload</p>
+<p>
+<label for="file-upload" class="custom-file-upload">
+</label>
+<input id="file-upload" type="file"/>
+</p>
+
+<p>
+	Sheet Music: 
+
+			<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js" type="application/javascript"></script>
+		<script type="application/javascript">
+
+		var accessId = '1751d3aa-4a47-4c23-842b-fa41ec7a99d0';
+		var taskUrl = 'analyze/melody';
+		var parameters = { blocking: false, format: 'json', access_id: accessId };
+
+		// the values for these parameters were taken from the corresponding controls in the demo form
+		parameters['input_file'] = 'https://s0.vocaroo.com/media/download_temp/Vocaroo_s079PQmFt1LS.mp3'; //http://www.sonicAPI.com/music/solo_sax.mp3
+		parameters['detailed_result'] = 'false';
+		    
+		function onTaskStarted(data) {
+		    var fileId = data.file.file_id;
+		    
+		    // request task progress every 500ms
+		    var polling = setInterval(pollTaskProgress, 500);
+		   
+		    function pollTaskProgress() {
+		        $.ajax({ url: 'https://api.sonicAPI.com/file/status?file_id=' + fileId + '&access_id=' + accessId + '&format=json', 
+		                 crossDomain: true, success: function(data) {
+		            if (data.file.status == 'ready') {
+		                onTaskSucceeded(fileId);
+		                clearInterval(polling);
+		            } else if (data.file.status == 'working') {
+		                $('#result').text(data.file.progress + '% done');
+		            }
+		        }});
+		    }
+		}
+
+		function onTaskSucceeded(fileId) {
+		    var downloadUrl = 'https://api.sonicAPI.com/file/download?file_id=' + fileId + '&access_id=' + accessId + '&format=json';
+		    
+		    $.ajax({ url: downloadUrl, crossDomain: true, success: function(data) {
+		        $('#result').html('Task succeeded, analysis result:<pre>' + JSON.stringify(data, null, 4) + '</pre>');
+		    }});
+		}
+
+		//function 
+
+		function onTaskFailed(response) {
+		    var data = $.parseJSON(response.responseText);
+		    var errorMessages = data.errors.map(function(error) { return error.message; });
+		 
+		    $('#result').text('Task failed, reason: ' + errorMessages.join(','));
+		}
+
+		// start task when clicking on the "Start task" button
+		$(document).ready(function() {
+		    $('#start').click(function() {
+		    	// execute an HTTP GET using the task's URL, the parameters and callback functions defined above
+		        $.ajax({ url: 'https://api.sonicAPI.com/' + taskUrl, data: parameters, 
+		                 success: onTaskStarted, error: onTaskFailed, crossDomain: true });
+		    });
+		});
+		</script>
+		<input type="button" id="start" value="Start task" />
+		<div id="result" />
+
+
+</p>
+</body>
+</html>
